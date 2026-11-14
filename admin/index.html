@@ -7,10 +7,10 @@
 <div id="admin-toast" class="admin-toast" role="status" aria-live="polite" hidden></div>
 <section id="login-screen" class="login-screen">
   <div class="login-art"><a href="/" class="login-brand"><img src="/assets/logo-jm-512.jpg" alt="JM Elegance"></a><div><span class="eyebrow">ÁREA RESTRITA</span><h1>Elegância em<br><em>cada detalhe.</em></h1><p>Sua vitrine, suas escolhas. Organize a coleção JM Elegance em um só lugar.</p></div><small>JM ELEGANCE · PAINEL DE GESTÃO</small></div>
-  <div class="login-form-side"><div class="login-box"><span class="eyebrow eyebrow-dark">BEM-VINDA DE VOLTA</span><h2>Acesse seu <em>painel.</em></h2><p>Use seu usuário do GitHub com um token restrito à JM Elegance.</p>
+  <div class="login-form-side"><div class="login-box"><span class="eyebrow eyebrow-dark">BEM-VINDA DE VOLTA</span><h2>Acesse seu <em>painel.</em></h2><p>Entre com um e-mail verificado na sua conta GitHub e um token restrito à JM Elegance.</p>
   
-  <form id="login-form"><label for="login-email">Usuário do GitHub</label><input id="login-email" type="text" autocomplete="username" placeholder="Usuário do GitHub" required>
-  <label for="login-password">Token de acesso restrito</label><input id="login-password" type="password" autocomplete="off" placeholder="github_pat_..." required><p class="login-help"><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">Criar token no GitHub ↗</a>. Selecione somente <strong>jm-elegance</strong> e permissão <strong>Contents: Read and write</strong>. O token fica apenas na memória desta aba e nunca deve ser compartilhado.</p>
+  <form id="login-form"><label for="login-email">E-mail do GitHub</label><input id="login-email" type="email" autocomplete="username" inputmode="email" placeholder="seuemail@exemplo.com" required>
+  <label for="login-password">Token de acesso restrito</label><input id="login-password" type="password" autocomplete="off" placeholder="github_pat_..." required><p class="login-help"><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">Criar token no GitHub ↗</a>. Selecione somente <strong>jm-elegance</strong> e configure <strong>Contents: Read and write</strong> (repositório) e <strong>Email addresses: Read-only</strong> (usuário). O token fica apenas na memória desta aba e nunca deve ser compartilhado.</p>
   <p id="login-error" class="form-error" hidden></p><button class="button button-dark login-submit" type="submit">Entrar no painel <span>↗</span></button></form><a href="/" class="login-back">← Voltar para a loja</a></div></div>
 </section>
 <div id="dashboard-screen" class="dashboard-screen" hidden>

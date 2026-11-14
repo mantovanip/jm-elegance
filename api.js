@@ -5,17 +5,31 @@ let token=null,user=null;const pending=new Map();
 async function gh(method,path,body){
   if(!token)throw Error('Faça login com um token do GitHub.');
   let r;try{r=await fetch(path.startsWith('https://')?path:API+path,{method,headers:{Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28',Authorization:'Bearer '+token,...(body===undefined?{}:{'Content-Type':'application/json'})},...(body===undefined?{}:{body:JSON.stringify(body)}),cache:'no-store'})}catch{throw Error('Não foi possível conectar ao GitHub.')}
-  if(!r.ok){const d=await r.json().catch(()=>({}));if(r.status===401)throw Error('Token inválido ou expirado.');if(r.status===403)throw Error('Acesso negado. O token precisa de Contents: Read and write para jm-elegance.');if(r.status===409||r.status===422)throw Error('Conflito de atualização. Atualize e tente novamente.');throw Error(d.message||'GitHub: erro '+r.status)}
+  if(!r.ok){const d=await r.json().catch(()=>({}));if(r.status===401)throw Error('Token inválido ou expirado.');if(r.status===403&&path==='https://api.github.com/user/emails')throw Error('O token precisa da permissão de usuário Email addresses: Read-only. Edite seu token no GitHub e tente novamente.');if(r.status===403)throw Error('Acesso negado. O token precisa de Contents: Read and write para jm-elegance.');if(r.status===409||r.status===422)throw Error('Conflito de atualização. Atualize e tente novamente.');throw Error(d.message||'GitHub: erro '+r.status)}
   return r.status===204?null:r.json();
 }
 const decode=b=>new TextDecoder().decode(Uint8Array.from(atob(b.replace(/\s/g,'')),c=>c.charCodeAt(0)));
 async function readRepo(path,defaultValue){const r=await gh('GET','/contents/'+path+'?ref=main');return JSON.parse(decode(r.content))}
 async function readPublic(path){const r=await fetch('/'+path+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('Não foi possível carregar o catálogo.');return r.json()}
 export const getStoredSession=()=>token&&user?{user}:null;
-export async function signIn(username,secret){
+export function verifiedEmailMatches(email,addresses){
+  const value=String(email||'').trim().toLowerCase();
+  return /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(value)&&Array.isArray(addresses)&&addresses.some(item=>item?.verified===true&&typeof item.email==='string'&&item.email.trim().toLowerCase()===value);
+}
+export async function signIn(email,secret){
   if(!/^(github_pat_|gh[pousr]_)/.test((secret||'').trim()))throw Error('Use um token pessoal fine-grained do GitHub.');
+  if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(String(email||'').trim()))throw Error('Informe um e-mail válido cadastrado no GitHub.');
   token=secret.trim();
-  try{const u=await gh('GET','https://api.github.com/user');const r=await gh('GET','');if(username?.trim().toLowerCase()!==u.login.toLowerCase())throw Error('Usuário e token GitHub não correspondem.');if(!r.permissions?.push)throw Error('Seu usuário não tem permissão para alterar este repositório.');user=u;return{user:u}}catch(e){token=null;user=null;throw e}
+  try{
+    const [account,repo,emails]=await Promise.all([
+      gh('GET','https://api.github.com/user'),
+      gh('GET',''),
+      gh('GET','https://api.github.com/user/emails')
+    ]);
+    if(!repo.permissions?.push)throw Error('Este token não permite editar o repositório jm-elegance.');
+    if(!verifiedEmailMatches(email,emails))throw Error('E-mail não encontrado entre os endereços verificados desta conta GitHub.');
+    user=account;return{user:account};
+  }catch(e){token=null;user=null;throw e}
 }
 export async function signOut(){token=null;user=null;pending.clear()}
 export async function getCurrentUser(){return user}

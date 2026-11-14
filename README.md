@@ -12,11 +12,11 @@ Vitrine para roupas femininas, masculinas e fitness. Não há carrinho, checkout
 
 1. Abra https://github.com/settings/personal-access-tokens/new
 2. Crie um token **Fine-grained**, selecionando **Only select repositories** e **jm-elegance**.
-3. Em **Repository permissions**, escolha **Contents: Read and write**. Não dê acesso a outros repositórios. Defina uma data de expiração.
-4. Na página /admin/, entre com seu **usuário GitHub** e o token. Não use a senha do GitHub.
+3. Em **Repository permissions**, escolha **Contents: Read and write**. Em **Account permissions**, habilite **Email addresses: Read-only** para validar seu e-mail verificado. Não dê acesso a outros repositórios. Defina uma data de expiração.
+4. Na página /admin/, entre com um **e-mail verificado na sua conta GitHub** e o token. Não use a senha do GitHub.
 5. O token permanece apenas em memória nesta aba; após recarregar, é necessário entrar novamente.
 
-Para outra pessoa administrar a loja, convide-a como colaboradora com acesso de escrita no repositório e peça que gere o próprio token. Não compartilhe credenciais.
+Para outra pessoa administrar a loja, convide-a como colaboradora com acesso de escrita no repositório e peça que gere o próprio token com permissão de leitura de e-mail. Não compartilhe credenciais.
 
 ## Adicionar e editar roupas
 
