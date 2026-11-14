@@ -18,7 +18,7 @@ O repositório é `mantovanip/jm-elegance`, separado de todos os outros projetos
 
 ### 2. Crie um projeto Supabase **novo**, exclusivo da JM Elegance
 
-Em <https://supabase.com/dashboard>, crie um projeto separado. Verifique o custo apresentado antes de confirmar. **Não execute o SQL no banco do DolceMed.**
+Em <https://supabase.com/dashboard>, crie um projeto separado. Verifique o custo apresentado antes de confirmar. **Este projeto utiliza recursos próprios e não deve compartilhar banco de dados com outros sites.**
 
 Abra **SQL Editor**, cole e execute **todo** o arquivo `supabase/schema.sql`. O arquivo cria tabelas, permissões RLS, gatilhos e o bucket público `product-images` com escrita restrita ao administrador.
 
