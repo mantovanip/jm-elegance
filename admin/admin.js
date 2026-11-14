@@ -1,5 +1,4 @@
-import {isConfigured} from '../config.js';
-import {getStoredSession,signIn,signOut,getCurrentUser,isAdmin,listProducts,getSettings,saveSettings,saveProduct,deleteProduct,uploadPhoto,removePhotos,compressPhoto,publicImageUrl,categoryLabel,formatPrice,escapeHtml,contactLinks} from '../api.js';
+import {signIn,signOut,getCurrentUser,isAdmin,listProducts,getSettings,saveSettings,saveProduct,deleteProduct,uploadPhoto,removePhotos,compressPhoto,publicImageUrl,categoryLabel,formatPrice,escapeHtml,contactLinks} from '../api.js';
 const $=id=>document.getElementById(id);
 let products=[],settings={},editingId=null,editingPaths=[],initialPaths=[],files=[],busy=false,deleteId=null;
 function notice(message,error=false){const el=$('admin-toast');el.textContent=message;el.hidden=false;el.classList.toggle('error',error);clearTimeout(notice.timer);notice.timer=setTimeout(()=>el.hidden=true,4500)}
@@ -12,7 +11,7 @@ function renderSettings(){$('settings-group').value=settings.group_url||'';$('se
 function tab(name){document.querySelectorAll('.admin-tab').forEach(t=>t.hidden=t.id!=='tab-'+name);document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('is-active',b.dataset.tab===name));$('admin-section-title').textContent=({overview:'Visão geral',products:'Produtos',settings:'Configurações'})[name];if(name==='products')renderProducts();if(name==='settings')renderSettings()}
 async function reload(){[products,settings]=await Promise.all([listProducts(true),getSettings()]);overview();renderProducts();renderSettings()}
 async function dashboard(){try{await reload();$('login-screen').hidden=true;$('dashboard-screen').hidden=false;tab('overview')}catch(e){formError('login-error',e);notice(e.message,true)}}
-async function init(){if(!isConfigured()){$('admin-config-warning').hidden=false;$('login-form').querySelector('button').disabled=true;return}if(getStoredSession()){const user=await getCurrentUser();if(user&&await isAdmin(user.id)){await dashboard()}else await signOut()}}
+async function init(){const user=await getCurrentUser();if(user&&await isAdmin(user.id))await dashboard()}
 $('login-form').addEventListener('submit',async e=>{e.preventDefault();const button=$('login-form').querySelector('button');$('login-error').hidden=true;button.disabled=true;button.textContent='Verificando...';try{const s=await signIn($('login-email').value.trim(),$('login-password').value);$('login-password').value='';if(!await isAdmin(s.user.id)){await signOut();throw Error('Usuário sem autorização. Convide este usuário como colaborador do repositório com permissão de escrita.')}await dashboard()}catch(err){formError('login-error',err)}finally{button.disabled=false;button.innerHTML='Entrar no painel <span>↗</span>'}});
 $('logout-btn').addEventListener('click',async()=>{await signOut();products=[];$('login-screen').hidden=false;$('dashboard-screen').hidden=true;$('login-password').value='';notice('Sessão encerrada.')});
 document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>tab(b.dataset.tab)));
@@ -29,6 +28,6 @@ $('product-form').addEventListener('submit',async e=>{e.preventDefault();if(busy
 function openDelete(id){deleteId=id;$('confirm-overlay').hidden=false}
 function closeDelete(){if(busy)return;deleteId=null;$('confirm-overlay').hidden=true}
 $('confirm-cancel').addEventListener('click',closeDelete);
-$('confirm-delete').addEventListener('click',async()=>{const p=products.find(p=>p.id===deleteId);if(!p||busy)return;busy=true;const button=$('confirm-delete');button.disabled=true;button.textContent='Excluindo...';try{await deleteProduct(p.id);if(p.photos?.length)try{await removePhotos(p.photos)}catch{notice('Produto removido, mas pode haver imagens restantes no Storage.',true)}deleteId=null;$('confirm-overlay').hidden=true;await reload();notice('Peça excluída do catálogo.')}catch(e){notice(e.message,true)}finally{busy=false;button.disabled=false;button.textContent='Excluir peça'}});
+$('confirm-delete').addEventListener('click',async()=>{const p=products.find(p=>p.id===deleteId);if(!p||busy)return;busy=true;const button=$('confirm-delete');button.disabled=true;button.textContent='Excluindo...';try{await deleteProduct(p.id);if(p.photos?.length)try{await removePhotos(p.photos)}catch{notice('Produto removido, mas algumas imagens podem permanecer no armazenamento.',true)}deleteId=null;$('confirm-overlay').hidden=true;await reload();notice('Peça excluída do catálogo.')}catch(e){notice(e.message,true)}finally{busy=false;button.disabled=false;button.textContent='Excluir peça'}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!busy){if(!$('confirm-overlay').hidden)closeDelete();else if(!$('editor-overlay').hidden)closeEditor()}});
 init();

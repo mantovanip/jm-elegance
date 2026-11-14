@@ -1,78 +1,36 @@
-// JM Elegance: catálogo no GitHub. O token nunca é salvo no código.
-const API='https://api.github.com/repos/mantovanip/jm-elegance';
-const PRODUCT_FILE='data/products.json',SETTINGS_FILE='data/settings.json';
-let token=null,user=null;const pending=new Map();
-async function gh(method,path,body){
-  if(!token)throw Error('Faça login com um token do GitHub.');
-  let r;try{r=await fetch(path.startsWith('https://')?path:API+path,{method,headers:{Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28',Authorization:'Bearer '+token,...(body===undefined?{}:{'Content-Type':'application/json'})},...(body===undefined?{}:{body:JSON.stringify(body)}),cache:'no-store'})}catch{throw Error('Não foi possível conectar ao GitHub.')}
-  if(!r.ok){const d=await r.json().catch(()=>({}));if(r.status===401)throw Error('Token inválido ou expirado.');if(r.status===403&&path==='https://api.github.com/user/emails')throw Error('O token precisa da permissão de usuário Email addresses: Read-only. Edite seu token no GitHub e tente novamente.');if(r.status===403)throw Error('Acesso negado. O token precisa de Contents: Read and write para jm-elegance.');if(r.status===409||r.status===422)throw Error('Conflito de atualização. Atualize e tente novamente.');throw Error(d.message||'GitHub: erro '+r.status)}
-  return r.status===204?null:r.json();
-}
-const decode=b=>new TextDecoder().decode(Uint8Array.from(atob(b.replace(/\s/g,'')),c=>c.charCodeAt(0)));
-async function readRepo(path,defaultValue){const r=await gh('GET','/contents/'+path+'?ref=main');return JSON.parse(decode(r.content))}
-async function readPublic(path){const r=await fetch('/'+path+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('Não foi possível carregar o catálogo.');return r.json()}
-export const getStoredSession=()=>token&&user?{user}:null;
-export function verifiedEmailMatches(email,addresses){
-  const value=String(email||'').trim().toLowerCase();
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)&&Array.isArray(addresses)&&addresses.some(item=>item?.verified===true&&typeof item.email==='string'&&item.email.trim().toLowerCase()===value);
-}
-export async function signIn(email,secret){
-  if(!/^(github_pat_|gh[pousr]_)/.test((secret||'').trim()))throw Error('Use um token pessoal fine-grained do GitHub.');
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email||'').trim()))throw Error('Informe um e-mail válido cadastrado no GitHub.');
-  token=secret.trim();
+// JM Elegance | API Cloudflare. Senhas nunca vão para o repositório.
+async function send(path,options={}){
+  let response;
   try{
-    const [account,repo,emails]=await Promise.all([
-      gh('GET','https://api.github.com/user'),
-      gh('GET',''),
-      gh('GET','https://api.github.com/user/emails')
-    ]);
-    if(!repo.permissions?.push)throw Error('Este token não permite editar o repositório jm-elegance.');
-    if(!verifiedEmailMatches(email,emails))throw Error('E-mail não encontrado entre os endereços verificados desta conta GitHub.');
-    user=account;return{user:account};
-  }catch(e){token=null;user=null;throw e}
-}
-export async function signOut(){token=null;user=null;pending.clear()}
-export async function getCurrentUser(){return user}
-export async function isAdmin(id){return Boolean(token&&user&&user.id===id)}
-export async function listProducts(drafts=false){const all=drafts?await readRepo(PRODUCT_FILE,[]):await readPublic(PRODUCT_FILE);return (Array.isArray(all)?all:[]).filter(p=>drafts||p.published).sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)))}
-export async function getSettings(){return token?readRepo(SETTINGS_FILE,{}):readPublic(SETTINGS_FILE)}
-async function encodeFile(file){const bytes=new Uint8Array(await file.arrayBuffer());let text='';for(let i=0;i<bytes.length;i+=8192)text+=String.fromCharCode(...bytes.subarray(i,i+8192));return btoa(text)}
-async function gitCommit(changes,message){
-  const ref=await gh('GET','/git/ref/heads/main');const head=ref.object.sha;
-  const base=await gh('GET','/git/commits/'+head);
-  const tree=[];
-  for(const c of changes){
-    if(c.remove){tree.push({path:c.path,mode:'100644',type:'blob',sha:null});continue}
-    if(c.file){const b=await gh('POST','/git/blobs',{content:await encodeFile(c.file),encoding:'base64'});tree.push({path:c.path,mode:'100644',type:'blob',sha:b.sha})}
-    else tree.push({path:c.path,mode:'100644',type:'blob',content:JSON.stringify(c.data,null,2)+'\n'});
+    response=await fetch('/api'+path,{credentials:'same-origin',cache:'no-store',...options,headers:{...(options.body instanceof Blob?{}:{Accept:'application/json'}),...options.headers}});
+  }catch{throw Error('Falha de conexão com a loja. Tente novamente.')}
+  if(!response.ok){
+    let d;try{d=await response.json()}catch{}
+    throw Error(d?.error||'Erro ao acessar o catálogo ('+response.status+').');
   }
-  const t=await gh('POST','/git/trees',{base_tree:base.tree.sha,tree});
-  const commit=await gh('POST','/git/commits',{message,tree:t.sha,parents:[head]});
-  await gh('PATCH','/git/refs/heads/main',{sha:commit.sha,force:false});pending.clear();
+  return response.status===204?null:response.json();
 }
-const safePhotos=p=>(p?.photos||[]).filter(x=>/^assets\/products\/[\w-]+\.webp$/.test(x));
-export async function uploadPhoto(file){if(!token)throw Error('Entre no painel.');const path='assets/products/'+crypto.randomUUID()+'.webp';pending.set(path,file);return path}
-export async function removePhotos(paths){for(const p of paths||[])pending.delete(p)}
-export function publicImageUrl(path){return /^assets\/products\/[\w-]+\.webp$/.test(path||'')?'/'+path:''}
-export async function saveProduct(data,id){
-  const all=await readRepo(PRODUCT_FILE,[]),idx=id?all.findIndex(p=>p.id===id):-1;
-  if(id&&idx<0)throw Error('Peça não encontrada. Atualize o painel.');
-  if(!['feminino','masculino','fitness','infantil'].includes(data.category))throw Error('Categoria inválida.');
-  const photos=safePhotos(data);if(photos.length<1||photos.length>6)throw Error('Adicione de uma a seis fotos.');
-  const old=idx>=0?all[idx]:null,now=new Date().toISOString();
-  const p={id:id||crypto.randomUUID(),name:data.name.trim(),description:data.description.trim(),category:data.category,price:data.price??null,photos,published:!!data.published,created_at:old?.created_at||now,updated_at:now};
-  if(idx>=0)all[idx]=p;else all.unshift(p);
-  await gitCommit([{path:PRODUCT_FILE,data:all},...photos.filter(x=>pending.has(x)).map(x=>({path:x,file:pending.get(x)})),...safePhotos(old).filter(x=>!photos.includes(x)).map(x=>({path:x,remove:true}))],(id?'Editar':'Adicionar')+' peça JM Elegance: '+p.name.slice(0,60));
-  return p;
+const jsonBody=data=>({headers:{'content-type':'application/json'},body:JSON.stringify(data)});
+export function getStoredSession(){return null}
+export async function signIn(email,password){return send('/login',{method:'POST',...jsonBody({email,password})})}
+export async function signOut(){try{return await send('/logout',{method:'POST',...jsonBody({})})}catch{return null}}
+export async function getCurrentUser(){try{const r=await send('/session');return r?.user||null}catch{return null}}
+export async function isAdmin(id){return id==='jm-admin'}
+export async function listProducts(withDrafts=false){return send('/products'+(withDrafts?'?all=1':''))}
+export async function getSettings(){return send('/settings')}
+export async function saveSettings(payload){return send('/settings',{method:'PATCH',...jsonBody(payload)})}
+export async function saveProduct(payload,id){return send('/products'+(id?'/'+encodeURIComponent(id):''),{method:id?'PATCH':'POST',...jsonBody(payload)})}
+export async function deleteProduct(id){return send('/products/'+encodeURIComponent(id),{method:'DELETE',...jsonBody({})})}
+export function publicImageUrl(path){
+  if(!/^assets\/products\/[a-f0-9-]{36}\.webp$/.test(path||''))return '';
+  return '/api/photos/'+path.split('/').pop();
 }
-export async function deleteProduct(id){
-  const all=await readRepo(PRODUCT_FILE,[]),old=all.find(p=>p.id===id);
-  if(!old)throw Error('Peça não encontrada.');
-  await gitCommit([{path:PRODUCT_FILE,data:all.filter(p=>p.id!==id)},...safePhotos(old).map(p=>({path:p,remove:true}))],'Excluir peça JM Elegance: '+old.name.slice(0,60));
+export async function uploadPhoto(file){
+  const response=await send('/photos',{method:'POST',headers:{'content-type':'image/webp'},body:file});
+  return response.path;
 }
-export async function saveSettings(data){
-  const settings={...(await readRepo(SETTINGS_FILE,{})),...data,updated_at:new Date().toISOString()};
-  await gitCommit([{path:SETTINGS_FILE,data:settings}],'Atualizar contatos JM Elegance');return settings;
+export async function removePhotos(paths){
+  if(paths?.length)return send('/photos',{method:'DELETE',...jsonBody({paths})});
 }
 export function contactLinks(settings={},name=''){let group='';let direct='';let instagram='';try{const u=new URL(settings.group_url||'');if(u.protocol==='https:'&&u.hostname==='chat.whatsapp.com'&&u.pathname.length>2)group=u.toString()}catch{}const number=String(settings.whatsapp_number||'').replace(/\D/g,'');if(/^\d{10,15}$/.test(number)){const text=name?'Olá! Vi a peça "'+name+'" no catálogo JM Elegance e gostaria de saber mais.':'Olá! Vim pelo site JM Elegance e gostaria de atendimento.';direct='https://wa.me/'+number+'?text='+encodeURIComponent(text)}try{const u=new URL(settings.instagram_url||'');if(u.protocol==='https:'&&['instagram.com','www.instagram.com'].includes(u.hostname))instagram=u.toString()}catch{}return {group,direct,instagram}}
 export function formatPrice(value){if(value==null||value==='')return 'Consulte o valor';return new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(Number(value))}
