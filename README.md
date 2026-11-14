@@ -65,17 +65,21 @@ npm run dev
 
 Para testar de verdade, entre no painel, preencha o WhatsApp, cadastre uma peça com foto, publique e veja a vitrine. Depois edite, crie um rascunho e exclua a peça. Teste também um usuário **sem** autorização para garantir bloqueio de escrita.
 
-### 6. Publique o site
+### 6. Hospedagem e publicação automática
 
-Sugestão: **Cloudflare Pages**, separado de qualquer Worker do DolceMed.
+Este repositório já está ligado a um projeto **Cloudflare Pages** exclusivo chamado `jm-elegance`, com a branch `main` como origem. Ao fazer commits nesta branch, a Cloudflare publica a vitrine em:
 
-1. Faça upload do projeto ao repositório `jm-elegance`.
-2. Em **Cloudflare > Workers & Pages > Create > Pages**, conecte o novo repositório.
-3. Como o site é estático, **não há build command**. Use o diretório raiz `.` como saída, ou siga a opção equivalente de deploy estático da plataforma.
-4. Teste primeiro o endereço de preview `*.pages.dev` (ou o endereço fornecido pelo provedor).
-5. Cadastre futuramente um domínio exclusivo da marca; configure HTTPS e teste também `/admin/`.
+**https://jm-elegance.pages.dev/**
 
-O site pode também ser hospedado em qualquer host de arquivos estáticos que sirva os diretórios como estão. O arquivo `_headers` oferece cabeçalhos de proteção em plataformas compatíveis.
+A hospedagem é independente de qualquer outro projeto Cloudflare. O serviço de banco permanece separado e precisa ser configurado no Supabase.
+
+- Build command: vazio (site HTML/CSS/JS estático).
+- Output directory: `.`
+- Production branch: `main`.
+- A administração fica em `/admin/`.
+- Antes de usar comercialmente, crie o Supabase exclusivo da loja, cadastre o administrador, preencha a chave pública em `config.js`, configure o grupo de WhatsApp e substitua as peças de demonstração pelas reais.
+
+Não utilize **GitHub Pages** como hospedagem de uma loja, pois as regras de uso do serviço não permitem sites voltados principalmente para transações comerciais. O GitHub aqui hospeda e versiona o código.
 
 ### 7. Configure o WhatsApp
 
