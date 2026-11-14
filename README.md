@@ -1,6 +1,6 @@
 # JM Elegance | Catálogo de moda
 
-Vitrine para roupas femininas, masculinas e fitness. Não há carrinho, checkout nem pagamento: os clientes seguem para o WhatsApp.
+Vitrine para roupas femininas, masculinas, fitness e infantis. Não há carrinho, checkout nem pagamento: os clientes seguem para o WhatsApp.
 
 ## Acessar o site e o painel
 

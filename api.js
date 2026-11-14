@@ -14,11 +14,11 @@ async function readPublic(path){const r=await fetch('/'+path+'?t='+Date.now(),{c
 export const getStoredSession=()=>token&&user?{user}:null;
 export function verifiedEmailMatches(email,addresses){
   const value=String(email||'').trim().toLowerCase();
-  return /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(value)&&Array.isArray(addresses)&&addresses.some(item=>item?.verified===true&&typeof item.email==='string'&&item.email.trim().toLowerCase()===value);
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)&&Array.isArray(addresses)&&addresses.some(item=>item?.verified===true&&typeof item.email==='string'&&item.email.trim().toLowerCase()===value);
 }
 export async function signIn(email,secret){
   if(!/^(github_pat_|gh[pousr]_)/.test((secret||'').trim()))throw Error('Use um token pessoal fine-grained do GitHub.');
-  if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(String(email||'').trim()))throw Error('Informe um e-mail válido cadastrado no GitHub.');
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email||'').trim()))throw Error('Informe um e-mail válido cadastrado no GitHub.');
   token=secret.trim();
   try{
     const [account,repo,emails]=await Promise.all([
@@ -57,7 +57,7 @@ export function publicImageUrl(path){return /^assets\/products\/[\w-]+\.webp$/.t
 export async function saveProduct(data,id){
   const all=await readRepo(PRODUCT_FILE,[]),idx=id?all.findIndex(p=>p.id===id):-1;
   if(id&&idx<0)throw Error('Peça não encontrada. Atualize o painel.');
-  if(!['feminino','masculino','fitness'].includes(data.category))throw Error('Categoria inválida.');
+  if(!['feminino','masculino','fitness','infantil'].includes(data.category))throw Error('Categoria inválida.');
   const photos=safePhotos(data);if(photos.length<1||photos.length>6)throw Error('Adicione de uma a seis fotos.');
   const old=idx>=0?all[idx]:null,now=new Date().toISOString();
   const p={id:id||crypto.randomUUID(),name:data.name.trim(),description:data.description.trim(),category:data.category,price:data.price??null,photos,published:!!data.published,created_at:old?.created_at||now,updated_at:now};
@@ -76,6 +76,6 @@ export async function saveSettings(data){
 }
 export function contactLinks(settings={},name=''){let group='';let direct='';let instagram='';try{const u=new URL(settings.group_url||'');if(u.protocol==='https:'&&u.hostname==='chat.whatsapp.com'&&u.pathname.length>2)group=u.toString()}catch{}const number=String(settings.whatsapp_number||'').replace(/\D/g,'');if(/^\d{10,15}$/.test(number)){const text=name?'Olá! Vi a peça "'+name+'" no catálogo JM Elegance e gostaria de saber mais.':'Olá! Vim pelo site JM Elegance e gostaria de atendimento.';direct='https://wa.me/'+number+'?text='+encodeURIComponent(text)}try{const u=new URL(settings.instagram_url||'');if(u.protocol==='https:'&&['instagram.com','www.instagram.com'].includes(u.hostname))instagram=u.toString()}catch{}return {group,direct,instagram}}
 export function formatPrice(value){if(value==null||value==='')return 'Consulte o valor';return new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(Number(value))}
-export function categoryLabel(v){return ({feminino:'Feminino',masculino:'Masculino',fitness:'Fitness'})[v]||'Moda'}
+export function categoryLabel(v){return ({feminino:'Feminino',masculino:'Masculino',fitness:'Fitness',infantil:'Infantil'})[v]||'Moda'}
 export function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 export async function compressPhoto(file){if(!['image/jpeg','image/png','image/webp'].includes(file.type))throw Error('Escolha fotos JPG, PNG ou WEBP.');if(file.size>8*1024*1024)throw Error('Cada imagem pode ter até 8 MB.');const bitmap=await createImageBitmap(file).catch(()=>{throw Error('A foto não pôde ser aberta.')});const scale=Math.min(1,1800/Math.max(bitmap.width,bitmap.height));const c=document.createElement('canvas');c.width=Math.round(bitmap.width*scale)||1;c.height=Math.round(bitmap.height*scale)||1;const ctx=c.getContext('2d');if(!ctx)throw Error('Falha ao processar foto.');ctx.drawImage(bitmap,0,0,c.width,c.height);bitmap.close?.();const data=await new Promise(resolve=>c.toBlob(resolve,'image/webp',.86));if(!data)throw Error('Não foi possível converter a foto.');return new File([data],crypto.randomUUID()+'.webp',{type:'image/webp'})}
