@@ -1,0 +1,1 @@
+{"name":"jm-elegance","version":"1.0.0","private":true,"type":"module","description":"Catálogo de moda JM Elegance, gestão por Supabase e atendimento WhatsApp","scripts":{"dev":"node serve.mjs","start":"node serve.mjs","test":"node --test"},"engines":{"node":">=20"}}
